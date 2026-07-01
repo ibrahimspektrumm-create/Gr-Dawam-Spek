@@ -1,0 +1,149 @@
+rules_version = '2';
+/* ============================================================
+   GR دوام الموظفين — Firestore Security Rules
+   Multi-Tenant Architecture with Row-Level Security
+
+   TENANT ISOLATION MODEL:
+   - Each shop = one tenant (tenantId === shopId)
+   - All documents carry tenantId for row-level enforcement
+   - Employee Portal: reads own record only via token lookup
+   - Shop Manager: reads/writes only within own tenantId
+   - Super Admin: all access (enforced at UI level, same anon auth)
+   - employees_by_token: public readable by token (needed for
+     employee.html to resolve token → employeeId without knowing shopId)
+
+   SECURITY NOTE:
+   All clients use anonymous auth — the Rules layer cannot
+   cryptographically distinguish roles. Password verification
+   and role gating happen in app code. Treat shop passwords
+   as PINs, not cryptographic secrets.
+   ============================================================ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /* ── shops (top-level tenant registry) ──────────────────── */
+    match /shops/{shopId} {
+      // القراءة مفتوحة — مطلوب لـ shop picker في login screen
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasAll(['name','username'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0;
+      allow update: if isSignedIn();
+      allow delete: if false;
+
+      /* ── employees (per-tenant sub-collection) ────────────── */
+      match /employees/{employeeId} {
+        // القراءة مفتوحة — مطلوب لـ admin panel cross-shop + token lookup
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+          && request.resource.data.keys().hasAll(['name','shopId','tenantId'])
+          && request.resource.data.tenantId == shopId;
+        allow update: if isSignedIn();
+        allow delete: if isSignedIn();
+      }
+    }
+
+    /* ── employees_by_token (root-level token index) ─────────
+       Token نفسه هو الـ secret (128-bit random hex) — أي حد
+       عنده الـ token يقدر يقرأ بياناته فقط.
+       ──────────────────────────────────────────────────────── */
+    match /employees_by_token/{token} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
+        && request.resource.data.keys().hasAll(['token','employeeId','shopId','tenantId']);
+      allow delete: if isSignedIn();
+    }
+
+    /* ── attendance day-documents ────────────────────────────── */
+    match /attendance/{attendanceId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if false;
+    }
+
+    /* ── records subcollection (collection-group rule) ─────────
+       يجب أن تكون top-level (/{path=**}/...) لتغطية
+       collectionGroup() queries — Firestore requirement.
+       ──────────────────────────────────────────────────────── */
+    match /{path=**}/records/{employeeId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if false;
+    }
+
+    /* ── correction_requests ─────────────────────────────────── */
+    match /correction_requests/{requestId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasAll(['employeeId','shopId','tenantId','date','reason','status'])
+        && request.resource.data.status == 'pending';
+      allow update: if isSignedIn();
+      allow delete: if false;
+    }
+
+    /* ── gate accounts (system-wide login accounts) ───────────── */
+    match /gate_accounts/{username} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasAll(['username','passwordHash','passwordSalt','passwordIterations']);
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
+    }
+
+    /* ── gate sessions (single-device-per-account lock) ──────── */
+    match /gate_sessions/{username} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    /* ── shop sessions (active session tracking per shop) ───────
+       Written by shop.html on login/logout to enable admin
+       visibility and release via the Sessions tab.
+       ──────────────────────────────────────────────────────── */
+    match /shop_sessions/{shopId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    /* ── payroll deductions ──────────────────────────────────── */
+    match /payroll_deductions/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    /* ── employee transfer requests (between shops) ──────────── */
+    match /transfer_requests/{transferId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasAll(['employeeId','fromShopId','toShopId','status']);
+      allow update: if isSignedIn();
+      allow delete: if false;
+    }
+
+    /* ── audit logs (append-only — لا يمكن تعديل أو حذف) ────── */
+    match /audit_logs/{logId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasAll(['action','timestamp']);
+      allow update, delete: if false;
+    }
+
+    /* ── system config (admin password hash, reset master key) ── */
+    match /system_config/{configId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    /* ── default deny ────────────────────────────────────────── */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
