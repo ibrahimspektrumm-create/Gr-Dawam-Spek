@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>لوحة المحل — GR دوام</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Tajawal:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-primary:#060A14;--bg-card:rgba(10,18,40,0.85);--bg-input:rgba(0,212,255,0.04);
+  --accent-cyan:#00D4FF;--accent-blue:#0066FF;--accent-green:#00FF88;
+  --accent-orange:#FF6B00;--accent-red:#FF0055;
+  --text-primary:#E8F4F8;--text-secondary:#7A9AB5;
+  --border-glass:rgba(0,212,255,0.12);
+  --radius-lg:16px;--radius-sm:8px;
+  --transition-fast:0.18s cubic-bezier(.4,0,.2,1);
+  --font-body:'Cairo',sans-serif;--font-mono:'IBM Plex Mono',monospace;
+  --font-display:'Tajawal',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:var(--font-body);color:var(--text-primary);background:var(--bg-primary);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+.hud-bg{position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(0,212,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.04) 1px,transparent 1px);background-size:40px 40px;}
+.scan-line{position:fixed;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(0,212,255,0.4),transparent);animation:scanLine 4s linear infinite;z-index:1;pointer-events:none;}
+@keyframes scanLine{0%{top:-2px}100%{top:100%}}
+.app{position:relative;z-index:2;min-height:100vh;}
+.container{width:100%;max-width:900px;margin:0 auto;padding:0 16px;}
+.glass-card{background:var(--bg-card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border-glass);border-radius:var(--radius-lg);position:relative;overflow:hidden;}
+.glass-card::before{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,rgba(0,212,255,0.03) 0%,transparent 60%);}
+.mono{font-family:var(--font-mono);}
+.text-secondary{color:var(--text-secondary);}
+.text-green{color:var(--accent-green);}
+.text-red{color:var(--accent-red);}
+.text-orange{color:var(--accent-orange);}
+.text-cyan{color:var(--accent-cyan);}
+
+/* Topbar */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(6,10,20,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-glass);padding:12px 0;}
+.topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-mark{width:36px;height:36px;border-radius:8px;flex-shrink:0;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-blue));display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:900;font-size:0.85rem;color:#fff;}
+.brand-text{font-family:var(--font-display);font-weight:800;font-size:1rem;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-blue));-webkit-background-clip:text;background-clip:text;color:transparent;}
+.brand-sub{font-size:0.72rem;color:var(--text-secondary);font-family:var(--font-mono);}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border-radius:var(--radius-sm);border:none;font-family:var(--font-body);font-weight:700;font-size:0.9rem;cursor:pointer;transition:all var(--transition-fast);white-space:nowrap;}
+.btn:disabled{opacity:0.5;cursor:not-allowed;}
+.btn-primary{background:linear-gradient(135deg,var(--accent-cyan),var(--accent-blue));color:#fff;box-shadow:0 4px 20px rgba(0,212,255,0.25);}
+.btn-primary:hover:not(:disabled){box-shadow:0 6px 28px rgba(0,212,255,0.4);transform:translateY(-1px);}
+.btn-green{background:rgba(0,255,136,0.1);color:var(--accent-green);border:1px solid rgba(0,255,136,0.35);}
+.btn-orange{background:rgba(255,107,0,0.1);color:var(--accent-orange);border:1px solid rgba(255,107,0,0.35);}
+.btn-red{background:rgba(255,0,85,0.1);color:var(--accent-red);border:1px solid rgba(255,0,85,0.35);}
+.btn-cyan{background:rgba(0,212,255,0.1);color:var(--accent-cyan);border:1px solid rgba(0,212,255,0.35);}
+.btn-ghost{background:transparent;color:var(--text-secondary);border:1px solid var(--border-glass);}
+.btn-ghost:hover:not(:disabled){color:var(--text-primary);border-color:var(--accent-cyan);}
+.btn-block{width:100%;}
+.btn-sm{padding:8px 14px;font-size:0.8rem;}
+
+/* Form */
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:0.82rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px;}
+.input{width:100%;padding:12px 16px;background:var(--bg-input);border:1px solid var(--border-glass);border-radius:var(--radius-sm);color:var(--text-primary);font-family:var(--font-body);font-size:0.95rem;transition:border-color var(--transition-fast);}
+.input:focus{outline:none;border-color:var(--accent-cyan);box-shadow:0 0 0 3px rgba(0,212,255,0.1);}
+.input-mono{font-family:var(--font-mono);}
+textarea.input{resize:vertical;min-height:80px;}
+.field-error{color:var(--accent-red);font-size:0.78rem;margin-top:4px;display:none;}
+.field-error.show{display:block;}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:0.74rem;font-weight:700;font-family:var(--font-mono);white-space:nowrap;}
+.badge-green{background:rgba(0,255,136,0.12);color:var(--accent-green);border:1px solid rgba(0,255,136,0.35);}
+.badge-orange{background:rgba(255,107,0,0.12);color:var(--accent-orange);border:1px solid rgba(255,107,0,0.35);}
+.badge-red{background:rgba(255,0,85,0.12);color:var(--accent-red);border:1px solid rgba(255,0,85,0.35);}
+.badge-cyan{background:rgba(0,212,255,0.12);color:var(--accent-cyan);border:1px solid rgba(0,212,255,0.35);}
+
+/* Toast */
+.toast-host{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:10px;width:calc(100% - 32px);max-width:420px;}
+.toast{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);font-size:0.88rem;font-weight:600;animation:toastIn .25s ease;backdrop-filter:blur(12px);}
+.toast.hide{animation:toastOut .25s ease forwards;}
+.toast.success{background:rgba(0,255,136,0.15);border:1px solid rgba(0,255,136,0.4);color:var(--accent-green);}
+.toast.error{background:rgba(255,0,85,0.15);border:1px solid rgba(255,0,85,0.4);color:var(--accent-red);}
+.toast.warn{background:rgba(255,107,0,0.15);border:1px solid rgba(255,107,0,0.4);color:var(--accent-orange);}
+.toast.info{background:rgba(0,212,255,0.15);border:1px solid rgba(0,212,255,0.4);color:var(--accent-cyan);}
+@keyframes toastIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(-10px)}}
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.2);border-top-color:currentColor;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Layout */
+.section{padding:20px 0 40px;}
+.section-card{padding:20px 18px;margin-bottom:16px;}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap;}
+.section-title{font-family:var(--font-display);font-weight:800;font-size:1.05rem;display:flex;align-items:center;gap:8px;}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent-cyan);box-shadow:0 0 8px var(--accent-cyan);flex-shrink:0;}
+
+/* Date bar */
+.date-bar-card{padding:16px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.date-day{font-family:var(--font-display);font-weight:800;font-size:1.1rem;color:var(--accent-cyan);}
+.date-iso{font-family:var(--font-mono);font-size:0.8rem;color:var(--text-secondary);}
+.date-diff-badge{display:none;padding:6px 12px;border-radius:8px;background:rgba(255,107,0,0.08);border:1px solid rgba(255,107,0,0.3);color:var(--accent-orange);font-size:0.8rem;font-weight:700;margin-top:8px;width:100%;}
+.date-diff-badge.show{display:block;}
+
+/* Tab nav */
+.tab-nav-wrap{position:relative;}
+.tab-nav-wrap::before,.tab-nav-wrap::after{content:'';position:absolute;top:14px;bottom:0;width:28px;pointer-events:none;z-index:2;}
+.tab-nav-wrap::before{right:0;background:linear-gradient(to left,var(--bg-primary),transparent);}
+.tab-nav-wrap::after{left:0;background:linear-gradient(to right,var(--bg-primary),transparent);}
+.tab-nav{display:flex;gap:4px;overflow-x:auto;padding:14px 0 0;scrollbar-width:thin;-webkit-overflow-scrolling:touch;}
+.tab-nav::-webkit-scrollbar{height:4px;}
+.tab-nav::-webkit-scrollbar-thumb{background:var(--border-glass);border-radius:4px;}
+.tab-btn{padding:8px 14px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;background:transparent;color:var(--text-secondary);border:1px solid transparent;font-weight:700;font-size:0.82rem;white-space:nowrap;flex-shrink:0;cursor:pointer;}
+.tab-btn.active{color:var(--accent-cyan);border-color:var(--border-glass);border-bottom-color:transparent;background:var(--bg-card);}
+
+/* Attendance table */
+.att-table,.data-table{width:100%;border-collapse:collapse;}
+.att-table th,.att-table td,.data-table th,.data-table td{padding:10px 10px;text-align:right;border-bottom:1px solid var(--border-glass);font-size:0.85rem;vertical-align:middle;}
+.att-table th,.data-table th{color:var(--text-secondary);font-weight:700;font-size:0.78rem;background:rgba(0,212,255,0.03);}
+.att-table tr:last-child td,.data-table tr:last-child td{border-bottom:none;}
+
+/* Employee cards */
+.emp-token-card{padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.emp-token-info{flex:1;}
+.emp-name-row{font-weight:700;font-size:0.95rem;margin-bottom:4px;}
+.emp-meta{font-size:0.78rem;color:var(--text-secondary);}
+.emp-url{font-family:var(--font-mono);font-size:0.72rem;color:var(--accent-cyan);word-break:break-all;margin-top:4px;cursor:pointer;}
+.emp-url:hover{text-decoration:underline;}
+.emp-actions{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;}
+
+/* Login screen */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.login-box{width:100%;max-width:420px;padding:36px 30px;text-align:center;}
+.login-logo{font-family:var(--font-display);font-weight:900;font-size:1.6rem;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-blue));-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:6px;}
+.login-sub{font-family:var(--font-mono);font-size:0.78rem;color:var(--text-secondary);margin-bottom:28px;display:block;}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);}
+.modal-overlay.hidden{display:none;}
+.modal{width:100%;max-width:520px;max-height:90vh;overflow-y:auto;padding:24px;background:var(--bg-card);backdrop-filter:blur(20px);border:1px solid var(--border-glass);border-radius:var(--radius-lg);animation:modalIn .2s ease;}
+@keyframes modalIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+.modal h2{font-family:var(--font-display);font-weight:800;font-size:1.15rem;margin-bottom:16px;}
+.modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;}
+.empty-state{padding:32px;text-align:center;color:var(--text-secondary);}
+.empty-state .icon{font-size:2.5rem;margin-bottom:10px;}
+.warn-flag{color:var(--accent-orange);font-size:0.7rem;font-weight:700;}
+.table-wrap{overflow-x:auto;}
+.lockout-box{background:rgba(255,0,85,0.06);border:1px solid rgba(255,0,85,0.25);border-radius:8px;padding:12px;text-align:center;color:var(--accent-red);font-size:0.84rem;margin-top:10px;}
+.lockout-timer{font-family:var(--font-mono);font-size:1.1rem;margin-top:6px;}
+
+@media(max-width:640px){
+  .topbar-inner{flex-direction:column;align-items:stretch;}
+  .topbar-right{justify-content:center;}
+  .topbar-right .btn{flex:1;}
+  .section-head{flex-direction:column;align-items:flex-end;}
+  .date-bar-card{flex-direction:column;align-items:flex-end;}
+  .emp-token-card{flex-direction:column;align-items:flex-end;}
+  .att-table th,.att-table td,.data-table th,.data-table td{padding:8px 6px;font-size:0.76rem;}
+}
+</style>
+</head>
+<body>
+<div class="hud-bg" aria-hidden="true"></div>
+<div class="scan-line" aria-hidden="true"></div>
+<div class="toast-host" id="toastHost" role="status" aria-live="polite"></div>
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal" id="modalContent" role="dialog"></div>
+</div>
+<div id="app"></div>
+
+<script type="module">
+/* ============================================================
+   SHOP MANAGER PORTAL — shop.html
+   - Authenticates with shop username/password (PBKDF2 hashed in Firestore)
+   - All data reads/writes scoped to this shop's tenantId
+   - Can: view attendance, add employees, view correction requests, submit manager requests
+   - Cannot: edit/delete attendance records (must submit correction request)
+   - Employee token URLs generated and displayed here
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyAQH5Z2kJ6YwlB1xdEQlwo5UGaWLYov0LE",
+  authDomain: "gr-dawam.firebaseapp.com",
+  projectId: "gr-dawam",
+  storageBucket: "gr-dawam.firebasestorage.app",
+  messagingSenderId: "272883931173",
+  appId: "1:272883931173:web:672937f47bbc93e57ac7cc"
+};
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, collection, doc, setDoc, getDoc, getDocs, onSnapshot,
+  updateDoc, query, where, orderBy, serverTimestamp, addDoc, limit, deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const app = initializeApp(firebaseConfig, "shopApp");
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+/* ── Auth ── */
+let uid = null;
+const authReady = new Promise(resolve => {
+  onAuthStateChanged(auth, async user => {
+    if (user){ uid = user.uid; resolve(); }
+    else { const c = await signInAnonymously(auth); uid = c.user.uid; resolve(); }
+  });
+});
+
+/* ── State ── */
+const SESSION_KEY = "gr_shop_session_v1";
+const LOCKOUT_KEY = "gr_shop_lockout_v1";
+const NORMAL_HOURS_DEFAULT = 8;
+const state = {
+  session: null,       // { shopId, shopName, loggedInAt }
+  shop: null,          // full shop document data
+  employees: [],
+  selectedDate: null,
+  todayISO: null,
+  attendanceRecords: {},  // empId → record data
+  correctionRequests: [],
+  activeTab: "attendance",
+  unsubAttendance: null,
+  unsubRecords: null,
+};
+
+/* ── Utilities ── */
+function todayISO(){ const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+function dayNameAr(iso){ return ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"][new Date(iso+"T12:00:00").getDay()]; }
+function formatTimeOnly(ts){ if(!ts) return "—"; const d = ts instanceof Date ? ts : ts.toDate(); return d.toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit",hour12:true}); }
+function formatHoursMinutes(decimal){ if(!decimal||decimal<=0) return "—"; const m=Math.round(decimal*60),h=Math.floor(m/60),mn=m%60; if(h===0)return `${mn} دقيقة`; if(mn===0)return `${h} ساعة`; return `${h} ساعة و${mn} دقيقة`; }
+function calcHours(checkIn,checkOut,normalHours=NORMAL_HOURS_DEFAULT){ if(!checkIn||!checkOut)return{total:0,base:0,extra:0}; const i=checkIn instanceof Date?checkIn:checkIn.toDate(),o=checkOut instanceof Date?checkOut:checkOut.toDate(); const total=Math.max(0,Math.round(((o-i)/3600000)*100)/100); return{total,base:Math.min(total,normalHours),extra:Math.max(0,Math.round((total-normalHours)*100)/100)}; }
+function escapeHtml(s){ const d=document.createElement("div");d.textContent=String(s||"");return d.innerHTML; }
+function attendanceDocId(shopId,date){ return `${shopId}_${date}`; }
+function generateToken(){ return Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,"0")).join(""); }
+function toSlug(name){ return name.trim().toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,""); }
+function getBaseUrl(){ return window.location.href.replace("shop.html","employee.html"); }
+
+/* ── PBKDF2 password handling ── */
+async function pbkdf2Hash(password, saltB64, iterations=150000){
+  const enc = new TextEncoder();
+  const salt = saltB64 ? b64ToBytes(saltB64) : crypto.getRandomValues(new Uint8Array(16));
+  const key = await crypto.subtle.importKey("raw",enc.encode(password),{name:"PBKDF2"},false,["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({name:"PBKDF2",salt,iterations,hash:"SHA-256"},key,256);
+  return {hash:bytesToB64(new Uint8Array(bits)),salt:bytesToB64(salt),iterations};
+}
+function bytesToB64(bytes){ let b=""; bytes.forEach(x=>b+=String.fromCharCode(x)); return btoa(b); }
+function b64ToBytes(b64){ const bin=atob(b64),bytes=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i); return bytes; }
+function constantTimeEqual(a,b){ if(a.length!==b.length)return false; let diff=0; for(let i=0;i<a.length;i++)diff|=a.charCodeAt(i)^b.charCodeAt(i); return diff===0; }
+async function verifyPassword(password, storedHash, storedSalt, iterations){ const r=await pbkdf2Hash(password,storedSalt,iterations); return constantTimeEqual(r.hash,storedHash); }
+
+/* ── Rate limiting ── */
+const LOCKOUT_TIERS = [{attempts:3,seconds:30},{attempts:5,seconds:300},{attempts:10,seconds:1800}];
+function getLockout(shopId){ try{const d=JSON.parse(localStorage.getItem(`${LOCKOUT_KEY}_${shopId}`)||"{}");return{count:d.count||0,lockedUntil:d.lockedUntil||0};}catch{return{count:0,lockedUntil:0};} }
+function setLockout(shopId,data){ localStorage.setItem(`${LOCKOUT_KEY}_${shopId}`,JSON.stringify(data)); }
+function clearLockout(shopId){ localStorage.removeItem(`${LOCKOUT_KEY}_${shopId}`); }
+function getLockoutSecs(count){ let s=0; LOCKOUT_TIERS.forEach(t=>{ if(count>=t.attempts)s=t.seconds; }); return s; }
+function recordFailedLogin(shopId){ const d=getLockout(shopId); d.count++; const s=getLockoutSecs(d.count); if(s>0)d.lockedUntil=Date.now()+s*1000; setLockout(shopId,d); return d; }
+
+/* ── Session ── */
+function saveSession(session){ localStorage.setItem(SESSION_KEY,JSON.stringify(session)); }
+function loadSession(){ try{ return JSON.parse(localStorage.getItem(SESSION_KEY)); }catch{ return null; } }
+function clearSession(){ localStorage.removeItem(SESSION_KEY); }
+
+/* ── Toast / Modal ── */
+function toast(msg,type="info",dur=3800){
+  const host=document.getElementById("toastHost"),el=document.createElement("div");
+  el.className=`toast ${type}`;
+  el.innerHTML=`<span>${{success:"✅",error:"⛔",warn:"⚠️",info:"ℹ️"}[type]||""}</span><span>${escapeHtml(msg)}</span>`;
+  host.appendChild(el);setTimeout(()=>{el.classList.add("hide");setTimeout(()=>el.remove(),250);},dur);
+}
+function showModal(html){ document.getElementById("modalContent").innerHTML=html; document.getElementById("modalOverlay").classList.remove("hidden"); }
+function closeModal(){ document.getElementById("modalOverlay").classList.add("hidden"); document.getElementById("modalContent").innerHTML=""; }
+document.getElementById("modalOverlay").addEventListener("click",e=>{ if(e.target===e.currentTarget)closeModal(); });
+
+/* ─────────────────────────────────────────
+   LOGIN FLOW
+   ───────────────────────────────────────── */
+function renderLogin(errorMsg=""){
+  document.getElementById("app").innerHTML = `
+    <div class="login-screen">
+      <div class="glass-card login-box">
+        <div class="login-logo">GR دوام الموظفين</div>
+        <span class="login-sub">SHOP MANAGER PORTAL</span>
+        <form id="loginForm" novalidate>
+          <div class="field" style="text-align:right;">
+            <label for="shopUsername">اسم المستخدم</label>
+            <input type="text" id="shopUsername" class="input" placeholder="Spektrumm GR 1" autocomplete="username" required>
+          </div>
+          <div class="field" style="text-align:right;">
+            <label for="shopPassword">كلمة المرور</label>
+            <input type="password" id="shopPassword" class="input input-mono" placeholder="••••••••" autocomplete="current-password" required>
+            ${errorMsg ? `<div class="field-error show">${escapeHtml(errorMsg)}</div>` : ""}
+          </div>
+          <div id="lockoutBox"></div>
+          <button type="submit" class="btn btn-primary btn-block" id="loginBtn" style="margin-top:8px;">دخول</button>
+        </form>
+      </div>
+    </div>`;
+  document.getElementById("loginForm").addEventListener("submit", handleLoginSubmit);
+}
+
+async function handleLoginSubmit(e){
+  e.preventDefault();
+  const username = document.getElementById("shopUsername").value.trim();
+  const password = document.getElementById("shopPassword").value;
+  const btn = document.getElementById("loginBtn");
+  if(!username || !password){ toast("أدخل اسم المستخدم وكلمة المرور","warn"); return; }
+
+  // Look up shop by username
+  const q = query(collection(db,"shops"), where("username","==",username), limit(1));
+  let shopDoc = null;
+  try{
+    await authReady;
+    const snap = await getDocs(q);
+    if(!snap.empty) shopDoc = { id: snap.docs[0].id, ...snap.docs[0].data() };
+  }catch(err){ console.error(err); toast("تعذّر الاتصال بقاعدة البيانات","error"); return; }
+
+  if(!shopDoc){
+    toast("اسم المستخدم غير صحيح","error");
+    return;
+  }
+
+  // Rate limiting per shopId
+  const lockData = getLockout(shopDoc.id);
+  if(lockData.lockedUntil > Date.now()){
+    const remaining = Math.ceil((lockData.lockedUntil - Date.now())/60000);
+    toast(`الحساب مقفل مؤقتاً — أعد المحاولة بعد ${remaining} دقيقة`,"error");
+    return;
+  }
+
+  btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> جاري التحقق...`;
+
+  try{
+    const valid = await verifyPassword(password, shopDoc.passwordHash, shopDoc.passwordSalt, shopDoc.passwordIterations || 150000);
+    if(!valid){
+      recordFailedLogin(shopDoc.id);
+      btn.disabled=false; btn.textContent="دخول";
+      toast("كلمة المرور غير صحيحة","error");
+      return;
+    }
+    clearLockout(shopDoc.id);
+    const session = { shopId: shopDoc.id, shopName: shopDoc.name, loggedInAt: Date.now() };
+    saveSession(session);
+    state.session = session;
+    state.shop = shopDoc;
+    // Register active session in Firestore (enables admin to see/release it)
+    try{
+      await setDoc(doc(db, "shop_sessions", shopDoc.id), {
+        active: true, shopId: shopDoc.id, shopName: shopDoc.name,
+        username: shopDoc.username || null,
+        loggedInAt: serverTimestamp(), lastSeen: serverTimestamp(),
+        uid,
+      }, { merge: true });
+    }catch(e){ console.warn("Session register failed:", e); }
+    await loadMain();
+  }catch(err){
+    console.error(err); btn.disabled=false; btn.textContent="دخول";
+    toast("خطأ في تسجيل الدخول — حاول مرة أخرى","error");
+  }
+}
+
+/* ─────────────────────────────────────────
+   MAIN LAYOUT
+   ───────────────────────────────────────── */
+async function loadMain(){
+  state.todayISO = todayISO();
+  state.selectedDate = state.todayISO;
+  await loadEmployees();
+  renderMain();
+  subscribeAttendance(state.selectedDate);
+}
+
+function renderMain(){
+  const shopId = state.session.shopId;
+  const shopName = state.session.shopName;
+  document.getElementById("app").innerHTML = `
+    <header class="topbar">
+      <div class="container topbar-inner">
+        <div class="brand">
+          <div class="brand-mark">GR</div>
+          <div>
+            <div class="brand-text">${escapeHtml(shopName)}</div>
+            <div class="brand-sub">SHOP MANAGER</div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button class="btn btn-ghost btn-sm" id="logoutBtn">خروج</button>
+        </div>
+      </div>
+      <div class="container tab-nav-wrap">
+        <nav class="tab-nav" id="tabNav">
+          ${["dashboard","attendance","employees","requests"].map(t=>`
+            <button class="tab-btn ${t===state.activeTab?'active':''}" data-tab="${t}">
+              ${{dashboard:"📊 لوحة التحكم", attendance:"📋 الحضور اليومي", employees:"👥 الموظفون", requests:"📝 طلبات التعديل"}[t]}
+            </button>`).join("")}
+        </nav>
+      </div>
+    </header>
+    <main class="container section" id="mainContent">
+      <!-- Date bar (shared across tabs) -->
+      <div class="glass-card date-bar-card" id="datebar">
+        <div>
+          <div class="date-day" id="dayNameDisplay">${dayNameAr(state.selectedDate)}</div>
+          <div class="date-iso mono">${state.selectedDate}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <label for="dateInput" style="font-size:0.78rem;color:var(--text-secondary);">التاريخ:</label>
+          <input type="date" id="dateInput" class="input input-mono" style="width:150px;padding:8px 10px;font-size:0.82rem;" value="${state.selectedDate}">
+        </div>
+        <div class="date-diff-badge ${state.selectedDate!==state.todayISO?'show':''}" id="dateDiffBadge">⚠ يوم مختلف عن اليوم الفعلي</div>
+      </div>
+      <div id="tabContent"></div>
+    </main>`;
+
+  document.getElementById("logoutBtn").addEventListener("click", handleLogout);
+  document.getElementById("dateInput").addEventListener("change", e=>{
+    state.selectedDate = e.target.value || state.todayISO;
+    document.getElementById("dayNameDisplay").textContent = dayNameAr(state.selectedDate);
+    document.getElementById("dateDiffBadge").classList.toggle("show", state.selectedDate !== state.todayISO);
+    subscribeAttendance(state.selectedDate);
+    if(state.activeTab === "attendance") renderAttendanceTab();
+  });
+  document.querySelectorAll("[data-tab]").forEach(btn=>{
+    btn.addEventListener("click", ()=>switchTab(btn.dataset.tab));
+  });
+  renderTabContent();
+}
+
+function switchTab(tab){
+  state.activeTab = tab;
+  document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
+  renderTabContent();
+  if(tab==="requests") loadCorrectionRequests();
+  if(tab==="dashboard") renderDashboardTab();
+}
+function renderTabContent(){
+  const el = document.getElementById("tabContent");
+  if(!el) return;
+  if(state.activeTab==="dashboard") renderDashboardTab();
+  else if(state.activeTab==="attendance") renderAttendanceTab();
+  else if(state.activeTab==="employees") renderEmployeesTab();
+  else if(state.activeTab==="requests") renderRequestsTab();
+}
+
+/* ─────────────────────────────────────────
+   ATTENDANCE TAB — read-only for manager
+   Manager can see all employees' status but CANNOT edit.
+   Manager can submit a correction request via the admin flow.
+   ───────────────────────────────────────── */
+function subscribeAttendance(date){
+  if(state.unsubAttendance){ state.unsubAttendance(); state.unsubAttendance=null; }
+  if(state.unsubRecords){ state.unsubRecords(); state.unsubRecords=null; }
+  const docId = attendanceDocId(state.session.shopId, date);
+  const recordsRef = collection(db,"attendance",docId,"records");
+  // Debounce renders to prevent UI freeze with rapid concurrent updates
+  let renderTimer = null;
+  state.unsubRecords = onSnapshot(recordsRef, snap=>{
+    state.attendanceRecords = {};
+    snap.docs.forEach(d=>{ state.attendanceRecords[d.id] = d.data(); });
+    if(state.activeTab==="attendance"){
+      clearTimeout(renderTimer);
+      renderTimer = setTimeout(()=>renderAttendanceTab(), 80);
+    }
+  }, err=>console.error("records sub error:",err));
+}
+
+async function loadEmployees(force=false){
+  // Cache employees — only reload when forced (add/edit/delete) or first load
+  if(!force && state.employees.length > 0) return;
+  const snap = await getDocs(query(
+    collection(db,"shops",state.session.shopId,"employees"),
+    where("status","!=","archived")
+  ));
+  state.employees = snap.docs.map(d=>({id:d.id,...d.data()}))
+    .sort((a,b)=>a.name.localeCompare(b.name,"ar"));
+}
+
+/* ─────────────────────────────────────────
+   DASHBOARD TAB
+   ───────────────────────────────────────── */
+async function renderDashboardTab(){
+  const el = document.getElementById("tabContent");
+  if(!el || state.activeTab!=="dashboard") return;
+
+  const shopId = state.session.shopId;
+  const today = state.todayISO;
+
+  el.innerHTML = `<div class="empty-state"><div class="spinner" aria-hidden="true"></div></div>`;
+
+  try{
+    // Reuse cached employees; only fetch today's attendance records
+    await loadEmployees();
+    const attSnap = await getDocs(collection(db,"attendance",`${shopId}_${today}`,"records"));
+
+    const allEmps = state.employees.filter(e=>e.status==="active");
+    const records = attSnap.docs.map(d=>({empId:d.id,...d.data()}));
+
+    const present    = records.filter(r=>r.checkIn && !r.checkOut && !r.onVacation);
+    const checkedOut = records.filter(r=>r.checkIn && r.checkOut);
+    const onVacation = records.filter(r=>r.onVacation);
+    const absent     = allEmps.filter(e=>!records.find(r=>r.empId===e.id));
+    const totalHours = records.reduce((sum,r)=>sum+(r.totalHours||0),0);
+    const extraHours = records.reduce((sum,r)=>sum+(r.extraHours||0),0);
+    const pendingCorr= records.filter(r=>r.approvalStatus==="pending").length;
+
+    const kpis = [
+      { icon:"👥", label:"إجمالي الموظفين", value: allEmps.length, color:"cyan" },
+      { icon:"🟢", label:"حاضر الآن", value: present.length, color:"green" },
+      { icon:"✅", label:"أنهوا يومهم", value: checkedOut.length, color:"blue" },
+      { icon:"🌴", label:"إجازة", value: onVacation.length, color:"yellow" },
+      { icon:"❌", label:"غائبون", value: absent.length, color:"red" },
+      { icon:"⏱", label:"إجمالي الساعات", value: totalHours.toFixed(1)+"س", color:"cyan" },
+      { icon:"⚡", label:"ساعات إضافية", value: extraHours.toFixed(1)+"س", color:"yellow" },
+      { icon:"🔔", label:"تعديلات معلّقة", value: pendingCorr, color: pendingCorr>0?"red":"green" },
+    ];
+
+    el.innerHTML = `
+      <div class="glass-card section-card">
+        <div class="section-head">
+          <div class="section-title"><span class="dot"></span> لوحة التحكم — ${escapeHtml(state.session.shopName)}</div>
+          <div class="mono" style="font-size:0.78rem;color:var(--text-secondary);">${today}</div>
+        </div>
+
+        <!-- KPI Grid -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:24px;">
+          ${kpis.map(k=>`
+            <div class="glass-card" style="padding:16px;text-align:center;border-color:rgba(var(--accent-${k.color}-rgb,0,212,255),0.2);">
+              <div style="font-size:1.6rem;margin-bottom:4px;">${k.icon}</div>
+              <div style="font-size:1.5rem;font-weight:800;font-family:var(--font-mono);color:var(--accent-${k.color==="cyan"?"cyan":k.color==="green"?"green":k.color==="red"?"red":"cyan"});">${k.value}</div>
+              <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px;">${k.label}</div>
+            </div>`).join("")}
+        </div>
+
+        <!-- Employee status table -->
+        <div class="section-title" style="margin-bottom:12px;"><span class="dot"></span> حالة الموظفين اليوم</div>
+        ${allEmps.length===0
+          ? `<div class="empty-state"><div class="icon">👥</div>لا يوجد موظفون نشطون</div>`
+          : `<div class="table-wrap"><table class="data-table">
+              <thead><tr><th>الموظف</th><th>الحالة</th><th>حضور</th><th>انصراف</th><th>الساعات</th></tr></thead>
+              <tbody>
+                ${allEmps.map(emp=>{
+                  const rec = records.find(r=>r.empId===emp.id);
+                  let statusBadge, statusColor;
+                  if(!rec)                       { statusBadge="غائب";      statusColor="red"; }
+                  else if(rec.onVacation)        { statusBadge="إجازة";     statusColor="yellow"; }
+                  else if(rec.checkIn&&rec.checkOut){ statusBadge="انصرف";  statusColor="blue"; }
+                  else if(rec.checkIn)           { statusBadge="حاضر";      statusColor="green"; }
+                  else                           { statusBadge="—";          statusColor="cyan"; }
+                  return `<tr>
+                    <td>${escapeHtml(emp.name)}</td>
+                    <td><span class="badge badge-${statusColor}">${statusBadge}</span></td>
+                    <td class="mono" style="font-size:0.8rem;">${rec?.checkIn ? fmtTime(rec.checkIn) : "—"}</td>
+                    <td class="mono" style="font-size:0.8rem;">${rec?.checkOut ? fmtTime(rec.checkOut) : "—"}</td>
+                    <td class="mono" style="font-size:0.8rem;">${rec?.totalHours ? rec.totalHours.toFixed(1)+"س" : "—"}</td>
+                  </tr>`;
+                }).join("")}
+              </tbody>
+            </table></div>`
+        }
+
+        <div style="margin-top:16px;text-align:left;">
+          <button class="btn btn-ghost btn-sm" id="dashRefreshBtn">🔄 تحديث</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("dashRefreshBtn").addEventListener("click", renderDashboardTab);
+  }catch(e){
+    console.error(e);
+    el.innerHTML = `<div class="empty-state">تعذّر تحميل البيانات — تحقق من الاتصال</div>`;
+  }
+}
+
+function fmtTime(ts){
+  if(!ts) return "—";
+  try{
+    const d = ts instanceof Date ? ts : (ts.toDate ? ts.toDate() : new Date(ts));
+    return d.toLocaleTimeString("ar-EG",{hour:"2-digit",minute:"2-digit",hour12:true});
+  }catch{ return "—"; }
+}
+
+function renderAttendanceTab(){
+  const el = document.getElementById("tabContent");
+  if(!el||state.activeTab!=="attendance") return;
+  const normalHours = state.shop?.settings?.normalHours || state.shop?.normalHours || NORMAL_HOURS_DEFAULT;
+  const present = state.employees.filter(e=>state.attendanceRecords[e.id]?.checkIn && !state.attendanceRecords[e.id]?.checkOut).length;
+  const done = state.employees.filter(e=>state.attendanceRecords[e.id]?.checkIn && state.attendanceRecords[e.id]?.checkOut).length;
+  const absent = state.employees.filter(e=>!state.attendanceRecords[e.id]?.checkIn && !state.attendanceRecords[e.id]?.onVacation).length;
+  const onVac = state.employees.filter(e=>state.attendanceRecords[e.id]?.onVacation).length;
+
+  el.innerHTML = `
+    <div class="glass-card section-card">
+      <div class="section-head">
+        <div class="section-title"><span class="dot"></span> الحضور — ${dayNameAr(state.selectedDate)}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <span class="badge badge-green">🟢 ${present} في العمل</span>
+          <span class="badge badge-cyan">✅ ${done} أنهوا</span>
+          <span class="badge badge-orange">⏳ ${absent} لم يسجّلوا</span>
+          ${onVac>0?`<span class="badge badge-cyan">🌴 ${onVac} إجازة</span>`:""}
+        </div>
+      </div>
+      <p class="text-secondary" style="font-size:0.8rem;margin-bottom:14px;">
+        📋 <strong>صلاحية القراءة فقط</strong> — لا يمكنك تعديل وقت الحضور أو الانصراف مباشرة. استخدم "طلب تعديل" لإرسال طلب للإدارة.
+      </p>
+      ${state.employees.length === 0 ? `<div class="empty-state"><div class="icon">👥</div>لا يوجد موظفون في هذا المحل</div>` : `
+        <div class="table-wrap">
+          <table class="att-table">
+            <thead><tr><th>الموظف</th><th>الحضور</th><th>الانصراف</th><th>ساعات</th><th>الحالة</th><th></th></tr></thead>
+            <tbody>
+              ${state.employees.map(emp=>{
+                const rec = state.attendanceRecords[emp.id];
+                const onVacation = rec?.onVacation===true;
+                const {total,extra} = rec?.checkIn&&rec?.checkOut ? calcHours(rec.checkIn,rec.checkOut,normalHours) : {total:0,extra:0};
+                let statusBadge = '<span class="badge badge-orange">⏳ لم يسجّل</span>';
+                if(onVacation) statusBadge='<span class="badge badge-cyan">🌴 إجازة</span>';
+                else if(rec?.checkIn&&rec?.checkOut) statusBadge='<span class="badge badge-green">✅ منتهي</span>';
+                else if(rec?.checkIn) statusBadge='<span class="badge badge-green">🟢 في العمل</span>';
+                return `<tr>
+                  <td>
+                    <div style="font-weight:700;">${escapeHtml(emp.name)}</div>
+                    ${rec?.dateMatchWarning?`<div class="warn-flag">⚠ تاريخ مختلف</div>`:""}
+                  </td>
+                  <td class="mono">${onVacation?"—":(rec?.checkIn?formatTimeOnly(rec.checkIn):"—")}</td>
+                  <td class="mono">${onVacation?"—":(rec?.checkOut?formatTimeOnly(rec.checkOut):"—")}</td>
+                  <td style="font-size:0.8rem;">${total>0?formatHoursMinutes(total):"—"}${extra>0?`<br><span class="text-orange" style="font-size:0.72rem;">+${formatHoursMinutes(extra)}</span>`:""}</td>
+                  <td>${statusBadge}</td>
+                  <td>
+                    ${rec?.checkIn ? `<button class="btn btn-ghost btn-sm" data-req-emp="${escapeHtml(emp.id)}" data-req-name="${escapeHtml(emp.name)}">طلب تعديل</button>` : ""}
+                  </td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>`}
+    </div>`;
+
+  el.querySelectorAll("[data-req-emp]").forEach(btn=>{
+    btn.addEventListener("click", ()=>openManagerCorrectionModal(btn.dataset.reqEmp, btn.dataset.reqName));
+  });
+}
+
+/* ── Manager correction request ── */
+function openManagerCorrectionModal(empId, empName){
+  const rec = state.attendanceRecords[empId];
+  showModal(`
+    <h2>طلب تعديل للإدارة — ${escapeHtml(empName)}</h2>
+    <p class="text-secondary" style="margin-bottom:16px;font-size:0.84rem;">
+      ليس لديك صلاحية التعديل المباشر. سيُرسَل الطلب للإدارة لمراجعته والبت فيه.
+    </p>
+    <div class="field">
+      <label>سبب الطلب <span style="color:var(--accent-red)">*</span></label>
+      <textarea id="manReqReason" class="input" rows="3" placeholder="اشرح سبب طلب التعديل..."></textarea>
+      <div class="field-error" id="manReqReasonError">الرجاء كتابة سبب الطلب</div>
+    </div>
+    <div class="field">
+      <label>الوقت الصحيح للحضور</label>
+      <input type="time" id="manReqCheckIn" class="input input-mono">
+    </div>
+    <div class="field">
+      <label>الوقت الصحيح للانصراف</label>
+      <input type="time" id="manReqCheckOut" class="input input-mono">
+    </div>
+    <div class="field">
+      <label>ملاحظات</label>
+      <textarea id="manReqNotes" class="input" rows="2" placeholder="أي ملاحظات إضافية..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="cancelManReq">إلغاء</button>
+      <button class="btn btn-primary" id="submitManReq">إرسال الطلب</button>
+    </div>
+  `);
+  document.getElementById("cancelManReq").addEventListener("click", closeModal);
+  document.getElementById("submitManReq").addEventListener("click", ()=>submitManagerRequest(empId, empName));
+}
+
+async function submitManagerRequest(empId, empName){
+  const reason = document.getElementById("manReqReason").value.trim();
+  if(!reason){ document.getElementById("manReqReasonError").classList.add("show"); return; }
+  const btn = document.getElementById("submitManReq");
+  btn.disabled=true; btn.innerHTML=`<span class="spinner"></span> جاري الإرسال...`;
+  try{
+    const rec = state.attendanceRecords[empId] || {};
+    await addDoc(collection(db,"correction_requests"),{
+      employeeId: empId, employeeName: empName,
+      shopId: state.session.shopId, tenantId: state.session.shopId,
+      date: state.selectedDate, type: "manager", reason,
+      requestedCheckIn: document.getElementById("manReqCheckIn").value || null,
+      requestedCheckOut: document.getElementById("manReqCheckOut").value || null,
+      notes: document.getElementById("manReqNotes").value.trim() || null,
+      oldCheckIn: rec.checkIn || null, oldCheckOut: rec.checkOut || null,
+      status: "pending", submittedAt: serverTimestamp(), reviewedAt: null, reviewedBy: null, adminNote: null, uid,
+    });
+    toast(`تم إرسال طلب التعديل لـ ${empName} للإدارة`,"success");
+    closeModal();
+    loadCorrectionRequests();
+  }catch(err){
+    console.error(err); toast("فشل إرسال الطلب","error");
+    btn.disabled=false; btn.textContent="إرسال الطلب";
+  }
+}
+
+/* ─────────────────────────────────────────
+   EMPLOYEES TAB — manage employees, generate tokens
+   ───────────────────────────────────────── */
+function renderEmployeesTab(){
+  const el = document.getElementById("tabContent");
+  if(!el||state.activeTab!=="employees") return;
+  const baseUrl = getBaseUrl();
+  el.innerHTML = `
+    <div class="glass-card section-card">
+      <div class="section-head">
+        <div class="section-title"><span class="dot"></span> الموظفون (${state.employees.length})</div>
+        <button class="btn btn-green btn-sm" id="addEmpBtn">+ إضافة موظف</button>
+      </div>
+      ${state.employees.length === 0 ? `<div class="empty-state"><div class="icon">👥</div>لا يوجد موظفون بعد. أضف أول موظف.</div>` :
+        state.employees.map(emp=>{
+          const token = emp.token || "";
+          const empUrl = token ? `${baseUrl}?token=${token}` : "—";
+          return `<div class="glass-card emp-token-card" style="margin-bottom:10px;">
+            <div class="emp-token-info">
+              <div class="emp-name-row">${escapeHtml(emp.name)}${emp.status==="pending"?'<span class="badge badge-orange" style="margin-right:8px;">بانتظار الاعتماد</span>':''}</div>
+              <div class="emp-meta">سعر الساعة: ${emp.hourlyRate?emp.hourlyRate.toFixed(2)+" €":"—"}</div>
+              ${token ? `
+                <div class="emp-url" title="رابط الموظف الخاص — اضغط للنسخ" data-copy-url="${escapeHtml(empUrl)}">
+                  🔗 ${empUrl.length > 60 ? empUrl.slice(0,57)+"..." : empUrl}
+                </div>` : '<div class="emp-meta text-orange">⚠ لا يوجد رابط خاص — أعد الحفظ لتوليده</div>'
+              }
+            </div>
+            <div class="emp-actions">
+              ${token ? `<button class="btn btn-ghost btn-sm" data-copy="${escapeHtml(empUrl)}">📋 نسخ الرابط</button>` : ""}
+              <button class="btn btn-ghost btn-sm" data-edit-emp="${escapeHtml(emp.id)}">تعديل</button>
+            </div>
+          </div>`;
+        }).join("")}
+    </div>`;
+  el.querySelectorAll("[data-copy]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{ navigator.clipboard?.writeText(btn.dataset.copy); toast("تم نسخ رابط الموظف","success"); });
+  });
+  el.querySelectorAll("[data-copy-url]").forEach(el2=>{
+    el2.addEventListener("click", ()=>{ navigator.clipboard?.writeText(el2.dataset.copyUrl); toast("تم نسخ الرابط","success"); });
+  });
+  el.querySelectorAll("[data-edit-emp]").forEach(btn=>{
+    btn.addEventListener("click", ()=>openEditEmployeeModal(btn.dataset.editEmp));
+  });
+  document.getElementById("addEmpBtn").addEventListener("click", openAddEmployeeModal);
+}
+
+function openAddEmployeeModal(){
+  showModal(`
+    <h2>إضافة موظف جديد</h2>
+    <div class="field">
+      <label>اسم الموظف (بالعربي) <span style="color:var(--accent-red)">*</span></label>
+      <input type="text" id="newEmpName" class="input" placeholder="مثال: أحمد حسن" maxlength="80">
+      <div class="field-error" id="newEmpNameError">الرجاء إدخال اسم الموظف</div>
+    </div>
+    <div class="field">
+      <label>اسم الموظف (بالإنجليزي — للرابط) <span style="color:var(--accent-red)">*</span></label>
+      <input type="text" id="newEmpNameEn" class="input input-mono" placeholder="ahmed-hassan" maxlength="60">
+      <div class="field-error" id="newEmpNameEnError">الرجاء إدخال الاسم بالإنجليزي</div>
+    </div>
+    <div class="field">
+      <label>سعر الساعة (€)</label>
+      <input type="number" id="newEmpRate" class="input input-mono" min="0" step="0.01" placeholder="0.00">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="cancelAddEmp">إلغاء</button>
+      <button class="btn btn-primary" id="confirmAddEmp">إضافة وتوليد الرابط</button>
+    </div>
+  `);
+  // Auto-fill English name from Arabic
+  document.getElementById("newEmpName").addEventListener("input", e=>{
+    const slug = toSlug(e.target.value.replace(/[\u0621-\u064A]/g, c => {
+      const map={"ا":"a","ب":"b","ت":"t","ث":"th","ج":"j","ح":"h","خ":"kh","د":"d","ذ":"th","ر":"r","ز":"z","س":"s","ش":"sh","ص":"s","ض":"d","ط":"t","ظ":"z","ع":"a","غ":"gh","ف":"f","ق":"q","ك":"k","ل":"l","م":"m","ن":"n","ه":"h","و":"w","ي":"y","ة":"a","ى":"a"};
+      return map[c]||c;
+    }).replace(/\s+/g,"-"));
+    if(!document.getElementById("newEmpNameEn").value) document.getElementById("newEmpNameEn").value = slug;
+  });
+  document.getElementById("cancelAddEmp").addEventListener("click", closeModal);
+  document.getElementById("confirmAddEmp").addEventListener("click", saveNewEmployee);
+}
+
+async function saveNewEmployee(){
+  const name = document.getElementById("newEmpName").value.trim();
+  const nameEn = toSlug(document.getElementById("newEmpNameEn").value.trim());
+  const hourlyRate = parseFloat(document.getElementById("newEmpRate").value) || 0;
+  let valid = true;
+  if(!name){ document.getElementById("newEmpNameError").classList.add("show"); valid=false; } else document.getElementById("newEmpNameError").classList.remove("show");
+  if(!nameEn){ document.getElementById("newEmpNameEnError").classList.add("show"); valid=false; } else document.getElementById("newEmpNameEnError").classList.remove("show");
+  if(!valid) return;
+
+  const btn = document.getElementById("confirmAddEmp");
+  btn.disabled=true; btn.innerHTML=`<span class="spinner"></span> جاري الإضافة...`;
+
+  try{
+    const token = generateToken();
+    const empId = `emp_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+    const empData = {
+      name, nameSlug: nameEn, token, hourlyRate, status: "active",
+      shopId: state.session.shopId, tenantId: state.session.shopId,
+      createdAt: serverTimestamp(), createdByShopManager: true,
+    };
+
+    // Save to shop's employees sub-collection
+    await setDoc(doc(db,"shops",state.session.shopId,"employees",empId), empData);
+
+    // Save to root-level token index (so employee.html can look up by token without knowing shopId)
+    await setDoc(doc(db,"employees_by_token",token),{
+      token, employeeId: empId, shopId: state.session.shopId,
+      tenantId: state.session.shopId, name, nameSlug: nameEn,
+      createdAt: serverTimestamp(),
+    });
+
+    await addDoc(collection(db,"audit_logs"),{
+      action:"employee_added_by_manager", employeeId:empId,
+      shopId:state.session.shopId, tenantId:state.session.shopId,
+      timestamp:serverTimestamp(), uid, source:"shop_manager",
+    });
+
+    toast(`تمت إضافة ${name} وتوليد الرابط الخاص به`,"success");
+    closeModal();
+    await loadEmployees(true);
+    renderEmployeesTab();
+  }catch(err){
+    console.error(err); toast("فشلت إضافة الموظف","error");
+    btn.disabled=false; btn.textContent="إضافة وتوليد الرابط";
+  }
+}
+
+function openEditEmployeeModal(empId){
+  const emp = state.employees.find(e=>e.id===empId);
+  if(!emp) return;
+  showModal(`
+    <h2>تعديل بيانات — ${escapeHtml(emp.name)}</h2>
+    <div class="field">
+      <label>اسم الموظف</label>
+      <input type="text" id="editEmpName" class="input" value="${escapeHtml(emp.name)}" maxlength="80">
+    </div>
+    <div class="field">
+      <label>سعر الساعة (€)</label>
+      <input type="number" id="editEmpRate" class="input input-mono" min="0" step="0.01" value="${emp.hourlyRate||0}">
+    </div>
+    <div class="field">
+      <label>الحالة</label>
+      <select id="editEmpStatus" class="input">
+        <option value="active" ${emp.status==="active"?"selected":""}>نشط</option>
+        <option value="pending" ${emp.status==="pending"?"selected":""}>بانتظار الاعتماد</option>
+        <option value="archived" ${emp.status==="archived"?"selected":""}>مؤرشف</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="cancelEditEmp">إلغاء</button>
+      <button class="btn btn-primary" id="confirmEditEmp">حفظ التعديلات</button>
+    </div>
+  `);
+  document.getElementById("cancelEditEmp").addEventListener("click", closeModal);
+  document.getElementById("confirmEditEmp").addEventListener("click", ()=>saveEditEmployee(empId));
+}
+
+async function saveEditEmployee(empId){
+  const btn = document.getElementById("confirmEditEmp");
+  btn.disabled=true; btn.innerHTML=`<span class="spinner"></span>`;
+  try{
+    await updateDoc(doc(db,"shops",state.session.shopId,"employees",empId),{
+      name: document.getElementById("editEmpName").value.trim(),
+      hourlyRate: parseFloat(document.getElementById("editEmpRate").value)||0,
+      status: document.getElementById("editEmpStatus").value,
+      updatedAt: serverTimestamp(),
+    });
+    toast("تم حفظ التعديلات","success"); closeModal();
+    await loadEmployees(true); renderEmployeesTab();
+  }catch(err){ console.error(err); toast("فشل الحفظ","error"); btn.disabled=false; btn.textContent="حفظ التعديلات"; }
+}
+
+/* ─────────────────────────────────────────
+   CORRECTION REQUESTS TAB
+   ───────────────────────────────────────── */
+async function loadCorrectionRequests(){
+  const q = query(
+    collection(db,"correction_requests"),
+    where("shopId","==",state.session.shopId),
+    where("type","==","manager"),
+    orderBy("submittedAt","desc"), limit(50)
+  );
+  const snap = await getDocs(q);
+  state.correctionRequests = snap.docs.map(d=>({id:d.id,...d.data()}));
+  if(state.activeTab==="requests") renderRequestsTab();
+}
+
+function renderRequestsTab(){
+  const el = document.getElementById("tabContent");
+  if(!el||state.activeTab!=="requests") return;
+  const statusLabels = {
+    pending:{label:"بانتظار المراجعة",cls:"badge-orange"},
+    reviewed:{label:"تحت المراجعة",cls:"badge-cyan"},
+    approved:{label:"تمت الموافقة",cls:"badge-green"},
+    rejected:{label:"مرفوض",cls:"badge-red"},
+  };
+  el.innerHTML = `
+    <div class="glass-card section-card">
+      <div class="section-head">
+        <div class="section-title"><span class="dot"></span> طلبات التعديل المُرسَلة</div>
+      </div>
+      ${state.correctionRequests.length===0?`<div class="empty-state"><div class="icon">📝</div>لا يوجد طلبات سابقة</div>`:
+        state.correctionRequests.map(req=>{
+          const st = statusLabels[req.status]||statusLabels.pending;
+          return `<div class="glass-card" style="padding:14px;margin-bottom:10px;">
+            <div class="emp-meta" style="margin-bottom:4px;">${req.date} — ${escapeHtml(req.employeeName||"")}</div>
+            <div style="font-size:0.85rem;margin-bottom:6px;">${escapeHtml(req.reason)}</div>
+            ${req.requestedCheckIn?`<div class="mono" style="font-size:0.78rem;color:var(--text-secondary);">المطلوب: ${req.requestedCheckIn} → ${req.requestedCheckOut||"—"}</div>`:""}
+            <span class="badge ${st.cls}">${st.label}</span>
+            ${req.adminNote?`<div class="emp-meta" style="margin-top:8px;border-top:1px solid var(--border-glass);padding-top:8px;">💬 رد الإدارة: ${escapeHtml(req.adminNote)}</div>`:""}
+          </div>`;
+        }).join("")}
+    </div>`;
+}
+
+/* ── Logout ── */
+async function handleLogout(){
+  if(state.unsubRecords){ state.unsubRecords(); state.unsubRecords=null; }
+  if(state.unsubAttendance){ state.unsubAttendance(); state.unsubAttendance=null; }
+  // Mark session inactive in Firestore
+  if(state.session?.shopId){
+    try{
+      await setDoc(doc(db, "shop_sessions", state.session.shopId),
+        { active: false, loggedOutAt: serverTimestamp() }, { merge: true });
+    }catch(e){ console.warn("Session clear failed:", e); }
+  }
+  clearSession();
+  state.session=null; state.shop=null; state.employees=[];
+  renderLogin();
+}
+
+/* ── INIT ── */
+async function init(){
+  await authReady;
+  const session = loadSession();
+  if(session?.shopId){
+    // Re-validate session: load shop data to confirm still active
+    try{
+      const shopSnap = await getDoc(doc(db,"shops",session.shopId));
+      if(shopSnap.exists() && shopSnap.data().status !== "archived"){
+        state.session = session;
+        state.shop = { id: shopSnap.id, ...shopSnap.data() };
+        await loadMain();
+        return;
+      }
+    }catch(e){ console.error("Session restore failed:",e); }
+    clearSession();
+  }
+  renderLogin();
+}
+init();
+</script>
+</body>
+</html>
